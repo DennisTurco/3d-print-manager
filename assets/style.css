@@ -1,0 +1,62 @@
+/* ─── Font Awesome ───────────────────────────────────────────────────────── */
+@import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css");
+
+/* ─── Global ────────────────────────────────────────────────────────────── */
+.stApp { background-color: #0E1117; }
+
+/* ─── Home tiles ─────────────────────────────────────────────────────────── */
+.home-tile {
+    background: #1A1D23;
+    border: 1px solid #2D3139;
+    border-radius: 12px;
+    padding: 1.4rem 1rem;
+    text-align: center;
+    transition: transform 0.2s, border-color 0.2s;
+}
+.home-tile:hover {
+    transform: translateY(-3px);
+    border-color: #FF6B35;
+}
+.tile-icon  { font-size: 2.2rem; margin-bottom: 0.4rem; color: #FF6B35; }
+.tile-title { font-size: 1.05rem; font-weight: 700; color: #FAFAFA; margin-bottom: 0.3rem; }
+.tile-desc  { font-size: 0.82rem; color: #9CA3AF; }
+
+/* ─── KPI cards ──────────────────────────────────────────────────────────── */
+.kpi-card {
+    background: #1A1D23;
+    border: 1px solid #2D3139;
+    border-radius: 10px;
+    padding: 1.2rem 1rem;
+    text-align: center;
+}
+.kpi-label  { font-size: 0.78rem; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.05em; }
+.kpi-value  { font-size: 1.9rem; font-weight: 800; color: #FF6B35; margin: 0.2rem 0; }
+.kpi-sub    { font-size: 0.78rem; color: #6B7280; }
+
+/* ─── Page titles ────────────────────────────────────────────────────────── */
+h1.page-title { font-size: 2rem; font-weight: 800; color: #FAFAFA; margin-bottom: 0.2rem; }
+h1.page-title i { color: #FF6B35; margin-right: 0.45rem; }
+
+/* ─── Section headers ────────────────────────────────────────────────────── */
+.section-header {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #FF6B35;
+    border-left: 4px solid #FF6B35;
+    padding-left: 0.6rem;
+    margin-bottom: 1rem;
+}
+.section-header i { margin-right: 0.35rem; }
+
+/* ─── Badges ─────────────────────────────────────────────────────────────── */
+.badge-green  { background:#065F46; color:#6EE7B7; padding:2px 8px; border-radius:99px; font-size:0.75rem; }
+.badge-orange { background:#7C2D12; color:#FED7AA; padding:2px 8px; border-radius:99px; font-size:0.75rem; }
+.badge-blue   { background:#1E3A5F; color:#93C5FD; padding:2px 8px; border-radius:99px; font-size:0.75rem; }
+
+/* ─── Form tweaks ────────────────────────────────────────────────────────── */
+div[data-testid="stForm"] {
+    background: #1A1D23;
+    border: 1px solid #2D3139;
+    border-radius: 10px;
+    padding: 1.2rem;
+}
