@@ -1,5 +1,5 @@
 """
-Desktop launcher — wraps the Streamlit app inside a native pywebview window.
+Desktop launcher — wraps the FastAPI app inside a native pywebview window.
 
 Usage:
     python launcher.py
@@ -12,22 +12,21 @@ import time
 
 import webview  # pip install pywebview
 
-_PORT = 8501
+_PORT = 8000
 _URL = f"http://localhost:{_PORT}"
 
 
-def _start_streamlit() -> None:
-    """Start the Streamlit server as a background subprocess."""
+def _start_fastapi() -> None:
+    """Start the FastAPI/uvicorn server as a background subprocess."""
     subprocess.Popen(
         [
             sys.executable,
             "-m",
-            "streamlit",
-            "run",
-            "app.py",
-            f"--server.port={_PORT}",
-            "--server.headless=true",
-            "--browser.gatherUsageStats=false",
+            "uvicorn",
+            "main:app",
+            "--host=127.0.0.1",
+            f"--port={_PORT}",
+            "--no-access-log",
         ],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -49,13 +48,12 @@ def _wait_for_server(timeout: int = 15) -> bool:
 
 
 def main() -> None:
-    # Launch Streamlit in a daemon thread so it dies with the window
-    t = threading.Thread(target=_start_streamlit, daemon=True)
+    t = threading.Thread(target=_start_fastapi, daemon=True)
     t.start()
 
-    print("Waiting for Streamlit to start...")
+    print("Waiting for FastAPI to start...")
     if not _wait_for_server():
-        print("WARNING: Streamlit did not respond in time - opening anyway.")
+        print("WARNING: Server did not respond in time - opening anyway.")
 
     window = webview.create_window(
         title="3D Print Manager",

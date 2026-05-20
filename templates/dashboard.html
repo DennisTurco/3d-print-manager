@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard · 3D Print Manager{% endblock %}
+{% block page_icon %}<i class="fa-solid fa-gauge-high"></i>{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- KPI cards -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-icon accent"><i class="fa-solid fa-euro-sign"></i></div>
+    <div>
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value">{{ kpis.total_revenue | currency }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon red"><i class="fa-solid fa-money-bill-wave"></i></div>
+    <div>
+      <div class="kpi-label">Total Costs</div>
+      <div class="kpi-value">{{ kpis.total_costs | currency }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon green"><i class="fa-solid fa-chart-line"></i></div>
+    <div>
+      <div class="kpi-label">Net Profit</div>
+      <div class="kpi-value">{{ kpis.net_profit | currency }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon blue"><i class="fa-solid fa-percent"></i></div>
+    <div>
+      <div class="kpi-label">Profit Margin</div>
+      <div class="kpi-value">{{ kpis.profit_margin_pct | percentage }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon purple"><i class="fa-solid fa-layer-group"></i></div>
+    <div>
+      <div class="kpi-label">Print Jobs</div>
+      <div class="kpi-value">{{ kpis.num_jobs }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon teal"><i class="fa-solid fa-clock"></i></div>
+    <div>
+      <div class="kpi-label">Total Print Hours</div>
+      <div class="kpi-value">{{ kpis.total_print_hours | number }} h</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div class="chart-row">
+  <div class="card chart-card">
+    <h2 class="card-title"><i class="fa-solid fa-chart-area"></i> Monthly Profit Trends</h2>
+    {% if has_trends %}
+    <canvas id="trendsChart"></canvas>
+    {% else %}
+    <p class="empty-hint"><i class="fa-solid fa-circle-info"></i> No data yet</p>
+    {% endif %}
+  </div>
+
+  <div class="card chart-card">
+    <h2 class="card-title"><i class="fa-solid fa-ranking-star"></i> Top Profitable Jobs</h2>
+    {% if has_top %}
+    <canvas id="topChart"></canvas>
+    {% else %}
+    <p class="empty-hint"><i class="fa-solid fa-circle-info"></i> No data yet</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Utilisation + Recent jobs -->
+<div class="chart-row">
+  <div class="card chart-card">
+    <h2 class="card-title"><i class="fa-solid fa-hourglass-half"></i> Printer Utilisation</h2>
+    {% if has_util %}
+    <canvas id="utilChart"></canvas>
+    {% else %}
+    <p class="empty-hint"><i class="fa-solid fa-circle-info"></i> No data yet</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2 class="card-title"><i class="fa-solid fa-list-check"></i> Recent Print Jobs</h2>
+    {% if recent_jobs %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Description</th><th>Customer</th>
+            <th>Date</th><th>Total Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for j in recent_jobs %}
+          <tr>
+            <td><code>{{ j.id }}</code></td>
+            <td>{{ j.description or "—" }}</td>
+            <td>{{ j.customer or "<span class='badge personal'>Personal</span>" | safe }}</td>
+            <td>{{ j.print_date }}</td>
+            <td>{{ j.total_cost | currency }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-hint"><i class="fa-solid fa-circle-info"></i> No print jobs recorded yet.
+      <a href="/jobs">Add your first job →</a></p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CHART_DEFAULTS = {
+  color: "#c9d1d9",
+  gridColor: "rgba(255,255,255,0.07)",
+  accent: "#FF6B35",
+  green: "#3fb950",
+  blue: "#58a6ff",
+};
+
+{% if has_trends %}
+(function(){
+  const d = {{ trends_json | safe }};
+  new Chart(document.getElementById("trendsChart"), {
+    type: "line",
+    data: {
+      labels: d.map(r => r.month),
+      datasets: [
+        { label: "Revenue", data: d.map(r => r.revenue), borderColor: CHART_DEFAULTS.green,
+          backgroundColor: "rgba(63,185,80,.15)", tension: 0.4, fill: true },
+        { label: "Costs",   data: d.map(r => r.costs),   borderColor: "#f85149",
+          backgroundColor: "rgba(248,81,73,.1)",  tension: 0.4, fill: true },
+        { label: "Profit",  data: d.map(r => r.profit),  borderColor: CHART_DEFAULTS.accent,
+          backgroundColor: "rgba(255,107,53,.15)", tension: 0.4, fill: true },
+      ]
+    },
+    options: chartOptions("€"),
+  });
+})();
+{% endif %}
+
+{% if has_top %}
+(function(){
+  const d = {{ top_json | safe }};
+  new Chart(document.getElementById("topChart"), {
+    type: "bar",
+    data: {
+      labels: d.map(r => r.id),
+      datasets: [{
+        label: "Profit (€)", data: d.map(r => r.profit),
+        backgroundColor: CHART_DEFAULTS.accent,
+        borderRadius: 4,
+      }]
+    },
+    options: { ...chartOptions("€"), indexAxis: "y" },
+  });
+})();
+{% endif %}
+
+{% if has_util %}
+(function(){
+  const d = {{ util_json | safe }};
+  new Chart(document.getElementById("utilChart"), {
+    type: "bar",
+    data: {
+      labels: d.map(r => r.month),
+      datasets: [{
+        label: "Print Hours", data: d.map(r => r.total_hours),
+        backgroundColor: CHART_DEFAULTS.blue,
+        borderRadius: 4,
+      }]
+    },
+    options: chartOptions("h"),
+  });
+})();
+{% endif %}
+
+function chartOptions(unit) {
+  return {
+    responsive: true,
+    plugins: {
+      legend: { labels: { color: CHART_DEFAULTS.color } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y ?? ctx.parsed.x} ${unit}` } }
+    },
+    scales: {
+      x: { ticks: { color: CHART_DEFAULTS.color }, grid: { color: CHART_DEFAULTS.gridColor } },
+      y: { ticks: { color: CHART_DEFAULTS.color }, grid: { color: CHART_DEFAULTS.gridColor } },
+    }
+  };
+}
+</script>
+{% endblock %}

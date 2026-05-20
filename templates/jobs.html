@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Print Jobs · 3D Print Manager{% endblock %}
+{% block page_icon %}<i class="fa-solid fa-print"></i>{% endblock %}
+{% block page_title %}Print Jobs{% endblock %}
+
+{% block content %}
+
+<!-- ── Form ───────────────────────────────────────────────────────────── -->
+<div class="card">
+  <h2 class="card-title">
+    {% if edit_job %}
+      <i class="fa-solid fa-pen-to-square"></i> Edit Job — {{ edit_job.id }}
+    {% else %}
+      <i class="fa-solid fa-plus"></i> Register Print Job
+    {% endif %}
+  </h2>
+
+  <form method="post"
+        action="{% if edit_job %}/jobs/{{ edit_job.id }}{% else %}/jobs{% endif %}">
+    <div class="form-grid">
+
+      {% if not edit_job %}
+      <div class="form-group">
+        <label for="id"><i class="fa-solid fa-fingerprint"></i> Job ID</label>
+        <input id="id" name="id" type="text" required
+               placeholder="e.g. JOB-001">
+      </div>
+      {% endif %}
+
+      <div class="form-group {% if not edit_job %}{% else %}span-2{% endif %}">
+        <label for="description"><i class="fa-solid fa-align-left"></i> Description</label>
+        <input id="description" name="description" type="text"
+               value="{{ edit_job.description if edit_job else '' }}"
+               placeholder="Short description of the print">
+      </div>
+
+      <div class="form-group">
+        <label for="rule_id"><i class="fa-solid fa-sliders"></i> Pricing Rule</label>
+        <select id="rule_id" name="rule_id">
+          <option value="">— select rule —</option>
+          {% for name, rid in rule_options.items() %}
+          <option value="{{ rid }}"
+                  {% if edit_job and edit_job.rule_id == rid %}selected{% endif %}>
+            {{ name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="material"><i class="fa-solid fa-box"></i> Material</label>
+        <input id="material" name="material" type="text"
+               value="{{ edit_job.material if edit_job else '' }}"
+               placeholder="e.g. PLA, PETG, ABS">
+      </div>
+
+      <div class="form-group">
+        <label for="print_weight"><i class="fa-solid fa-weight-hanging"></i> Print Weight (g)</label>
+        <input id="print_weight" name="print_weight" type="number" step="0.1" min="0" required
+               value="{{ edit_job.print_weight if edit_job else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="print_duration"><i class="fa-solid fa-clock"></i> Print Duration (h)</label>
+        <input id="print_duration" name="print_duration" type="number" step="0.01" min="0" required
+               value="{{ edit_job.print_duration if edit_job else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="operator_time"><i class="fa-solid fa-person-digging"></i> Operator Time (h)</label>
+        <input id="operator_time" name="operator_time" type="number" step="0.01" min="0"
+               value="{{ edit_job.operator_time if edit_job else '0' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="modeling_time"><i class="fa-solid fa-drafting-compass"></i> Modeling Time (h)</label>
+        <input id="modeling_time" name="modeling_time" type="number" step="0.01" min="0"
+               value="{{ edit_job.modeling_time if edit_job else '0' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="quantity"><i class="fa-solid fa-hashtag"></i> Quantity</label>
+        <input id="quantity" name="quantity" type="number" step="1" min="1"
+               value="{{ edit_job.quantity if edit_job else '1' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="discount"><i class="fa-solid fa-tag"></i> Discount (%)</label>
+        <input id="discount" name="discount" type="number" step="0.1" min="0" max="100"
+               value="{{ edit_job.discount if edit_job else '0' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="print_date"><i class="fa-solid fa-calendar-days"></i> Print Date</label>
+        <input id="print_date" name="print_date" type="date"
+               value="{{ edit_job.print_date if edit_job else today }}">
+      </div>
+
+      <!-- personal use toggle -->
+      <div class="form-group span-2 toggle-row">
+        <label class="toggle-label">
+          <input id="is_personal_use" name="is_personal_use" type="checkbox"
+                 value="1" class="toggle-input"
+                 {% if edit_job and edit_job.is_personal_use %}checked{% endif %}
+                 onchange="toggleCustomer(this.checked)">
+          <span class="toggle-switch"></span>
+          <span><i class="fa-solid fa-house-user"></i> Personal use (no customer / no sale)</span>
+        </label>
+      </div>
+
+      <!-- customer — hidden when personal -->
+      <div class="form-group" id="customer-row"
+           style="{% if edit_job and edit_job.is_personal_use %}display:none{% endif %}">
+        <label for="customer"><i class="fa-solid fa-user"></i> Customer</label>
+        <input id="customer" name="customer" type="text"
+               value="{{ edit_job.customer if edit_job else '' }}"
+               placeholder="Customer name">
+      </div>
+
+    </div><!-- /form-grid -->
+
+    <p class="form-hint">
+      <i class="fa-solid fa-circle-info"></i>
+      Costs are calculated automatically from the linked rule when you save.
+    </p>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">
+        {% if edit_job %}
+          <i class="fa-solid fa-floppy-disk"></i> Update Job
+        {% else %}
+          <i class="fa-solid fa-plus"></i> Save Job
+        {% endif %}
+      </button>
+      {% if edit_job %}
+      <a href="/jobs" class="btn btn-ghost">
+        <i class="fa-solid fa-xmark"></i> Cancel
+      </a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- ── Jobs table ──────────────────────────────────────────────────────── -->
+<div class="card">
+  <h2 class="card-title"><i class="fa-solid fa-list"></i> All Print Jobs</h2>
+
+  {% if jobs %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Description</th>
+          <th>Rule</th>
+          <th>Customer</th>
+          <th>Date</th>
+          <th>Weight (g)</th>
+          <th>Duration (h)</th>
+          <th>Qty</th>
+          <th>Material Cost</th>
+          <th>Energy</th>
+          <th>Wear</th>
+          <th>Labour</th>
+          <th>Total Cost</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for j in jobs %}
+        <tr id="job-{{ j.id | replace('/', '-') }}">
+          <td><code>{{ j.id }}</code></td>
+          <td>{{ j.description or "—" }}</td>
+          <td>{{ j.rule_name or "—" }}</td>
+          <td>
+            {% if j.is_personal_use %}
+              <span class="badge personal"><i class="fa-solid fa-house-user"></i> Personal</span>
+            {% else %}
+              {{ j.customer or "—" }}
+            {% endif %}
+          </td>
+          <td>{{ j.print_date }}</td>
+          <td>{{ j.print_weight | number(1) }}</td>
+          <td>{{ j.print_duration | number(2) }}</td>
+          <td>{{ j.quantity }}</td>
+          <td>{{ j.material_cost | currency }}</td>
+          <td>{{ j.energy_cost | currency }}</td>
+          <td>{{ j.machine_wear | currency }}</td>
+          <td>{{ j.labor_cost | currency }}</td>
+          <td><strong>{{ j.total_cost | currency }}</strong></td>
+          <td class="actions">
+            <a href="/jobs?edit_id={{ j.id }}" class="btn btn-sm btn-ghost" title="Edit">
+              <i class="fa-solid fa-pen"></i>
+            </a>
+            <button class="btn btn-sm btn-danger"
+                    hx-post="/jobs/{{ j.id }}/delete"
+                    hx-target="#job-{{ j.id | replace('/', '-') }}"
+                    hx-swap="outerHTML"
+                    hx-confirm="Delete job '{{ j.id }}'?"
+                    title="Delete">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty-hint">
+    <i class="fa-solid fa-circle-info"></i>
+    No print jobs yet — add your first one above.
+  </p>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleCustomer(isPersonal) {
+  document.getElementById("customer-row").style.display = isPersonal ? "none" : "";
+}
+</script>
+{% endblock %}

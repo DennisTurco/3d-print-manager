@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Rules · 3D Print Manager{% endblock %}
+{% block page_icon %}<i class="fa-solid fa-sliders"></i>{% endblock %}
+{% block page_title %}Pricing Rules{% endblock %}
+
+{% block content %}
+
+<!-- ── Form (create or edit) ──────────────────────────────────────────── -->
+<div class="card">
+  <h2 class="card-title">
+    {% if edit_rule %}
+      <i class="fa-solid fa-pen-to-square"></i> Edit Rule — {{ edit_rule.name }}
+    {% else %}
+      <i class="fa-solid fa-plus"></i> New Rule
+    {% endif %}
+  </h2>
+
+  <form method="post"
+        action="{% if edit_rule %}/rules/{{ edit_rule.id }}{% else %}/rules{% endif %}">
+    <div class="form-grid">
+
+      <div class="form-group span-2">
+        <label for="name"><i class="fa-solid fa-tag"></i> Rule Name</label>
+        <input id="name" name="name" type="text" required
+               value="{{ edit_rule.name if edit_rule else '' }}"
+               placeholder="e.g. PLA Standard">
+      </div>
+
+      <div class="form-group">
+        <label for="filament_price"><i class="fa-solid fa-spool"></i> Filament Spool Price (€)</label>
+        <input id="filament_price" name="filament_price" type="number" step="0.01" min="0" required
+               value="{{ edit_rule.filament_price if edit_rule else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="spool_weight"><i class="fa-solid fa-weight-scale"></i> Spool Weight (g)</label>
+        <input id="spool_weight" name="spool_weight" type="number" step="1" min="1" required
+               value="{{ edit_rule.spool_weight if edit_rule else '1000' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="electricity_cost"><i class="fa-solid fa-bolt"></i> Electricity Cost (€/kWh)</label>
+        <input id="electricity_cost" name="electricity_cost" type="number" step="0.001" min="0" required
+               value="{{ edit_rule.electricity_cost if edit_rule else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="printer_power"><i class="fa-solid fa-plug"></i> Printer Power (kW)</label>
+        <input id="printer_power" name="printer_power" type="number" step="0.001" min="0" required
+               value="{{ edit_rule.printer_power if edit_rule else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="wear_cost"><i class="fa-solid fa-wrench"></i> Machine Wear (€/h)</label>
+        <input id="wear_cost" name="wear_cost" type="number" step="0.01" min="0" required
+               value="{{ edit_rule.wear_cost if edit_rule else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="operator_hourly"><i class="fa-solid fa-person-digging"></i> Operator Rate (€/h)</label>
+        <input id="operator_hourly" name="operator_hourly" type="number" step="0.01" min="0" required
+               value="{{ edit_rule.operator_hourly if edit_rule else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="modeling_hourly"><i class="fa-solid fa-drafting-compass"></i> Modeling Rate (€/h)</label>
+        <input id="modeling_hourly" name="modeling_hourly" type="number" step="0.01" min="0" required
+               value="{{ edit_rule.modeling_hourly if edit_rule else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="margin"><i class="fa-solid fa-percent"></i> Pricing Margin (%)</label>
+        <input id="margin" name="margin" type="number" step="0.1" min="0" required
+               value="{{ edit_rule.margin if edit_rule else '20' }}">
+      </div>
+
+    </div><!-- /form-grid -->
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">
+        {% if edit_rule %}
+          <i class="fa-solid fa-floppy-disk"></i> Update Rule
+        {% else %}
+          <i class="fa-solid fa-plus"></i> Create Rule
+        {% endif %}
+      </button>
+      {% if edit_rule %}
+      <a href="/rules" class="btn btn-ghost">
+        <i class="fa-solid fa-xmark"></i> Cancel
+      </a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- ── Rules table ─────────────────────────────────────────────────────── -->
+<div class="card">
+  <h2 class="card-title"><i class="fa-solid fa-list"></i> Saved Rules</h2>
+
+  {% if rules %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Filament (€)</th>
+          <th>Spool (g)</th>
+          <th>Electricity (€/kWh)</th>
+          <th>Power (kW)</th>
+          <th>Wear (€/h)</th>
+          <th>Operator (€/h)</th>
+          <th>Modeling (€/h)</th>
+          <th>Margin (%)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rules %}
+        <tr id="rule-{{ r.id }}">
+          <td>{{ r.id }}</td>
+          <td><strong>{{ r.name }}</strong></td>
+          <td>{{ r.filament_price | currency }}</td>
+          <td>{{ r.spool_weight | number(0) }}</td>
+          <td>{{ r.electricity_cost | number(3) }}</td>
+          <td>{{ r.printer_power | number(3) }}</td>
+          <td>{{ r.wear_cost | currency }}</td>
+          <td>{{ r.operator_hourly | currency }}</td>
+          <td>{{ r.modeling_hourly | currency }}</td>
+          <td>{{ r.margin | percentage }}</td>
+          <td class="actions">
+            <a href="/rules?edit_id={{ r.id }}" class="btn btn-sm btn-ghost" title="Edit">
+              <i class="fa-solid fa-pen"></i>
+            </a>
+            <button class="btn btn-sm btn-danger"
+                    hx-post="/rules/{{ r.id }}/delete"
+                    hx-target="#rule-{{ r.id }}"
+                    hx-swap="outerHTML"
+                    hx-confirm="Delete rule '{{ r.name }}'? This cannot be undone."
+                    title="Delete">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty-hint">
+    <i class="fa-solid fa-circle-info"></i>
+    No rules yet — create your first pricing rule above.
+  </p>
+  {% endif %}
+</div>
+
+{% endblock %}

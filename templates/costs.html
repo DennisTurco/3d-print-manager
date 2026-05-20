@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Costs · 3D Print Manager{% endblock %}
+{% block page_icon %}<i class="fa-solid fa-calculator"></i>{% endblock %}
+{% block page_title %}Cost Breakdown{% endblock %}
+
+{% block content %}
+
+<!-- ── Summary KPIs ────────────────────────────────────────────────────── -->
+<div class="kpi-grid kpi-grid--4">
+  <div class="kpi-card">
+    <div class="kpi-icon accent"><i class="fa-solid fa-box"></i></div>
+    <div>
+      <div class="kpi-label">Total Material</div>
+      <div class="kpi-value">{{ totals.total_material | currency }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon blue"><i class="fa-solid fa-bolt"></i></div>
+    <div>
+      <div class="kpi-label">Total Energy</div>
+      <div class="kpi-value">{{ totals.total_energy | currency }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon red"><i class="fa-solid fa-wrench"></i></div>
+    <div>
+      <div class="kpi-label">Total Wear</div>
+      <div class="kpi-value">{{ totals.total_wear | currency }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon purple"><i class="fa-solid fa-person-digging"></i></div>
+    <div>
+      <div class="kpi-label">Total Labour</div>
+      <div class="kpi-value">{{ totals.total_labor | currency }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="kpi-grid kpi-grid--1">
+  <div class="kpi-card kpi-card--large">
+    <div class="kpi-icon green"><i class="fa-solid fa-sigma"></i></div>
+    <div>
+      <div class="kpi-label">Grand Total Production Cost</div>
+      <div class="kpi-value kpi-value--xl">{{ totals.grand_total | currency }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts + filter row -->
+<div class="chart-row">
+  <!-- Donut -->
+  <div class="card chart-card--sm">
+    <h2 class="card-title"><i class="fa-solid fa-chart-pie"></i> Cost Split</h2>
+    {% if has_pie %}
+    <canvas id="pieChart"></canvas>
+    {% else %}
+    <p class="empty-hint"><i class="fa-solid fa-circle-info"></i> No data yet</p>
+    {% endif %}
+  </div>
+
+  <!-- Filter -->
+  <div class="card">
+    <h2 class="card-title"><i class="fa-solid fa-filter"></i> Filter</h2>
+    <form method="get" action="/costs" class="filter-form">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="from"><i class="fa-solid fa-calendar-days"></i> From</label>
+          <input id="from" name="from" type="date" value="{{ f_from }}">
+        </div>
+        <div class="form-group">
+          <label for="to"><i class="fa-solid fa-calendar-days"></i> To</label>
+          <input id="to" name="to" type="date" value="{{ f_to }}">
+        </div>
+        <div class="form-group">
+          <label for="rule"><i class="fa-solid fa-sliders"></i> Rule</label>
+          <input id="rule" name="rule" type="text" value="{{ f_rule }}" placeholder="Rule name">
+        </div>
+        <div class="form-group">
+          <label for="customer"><i class="fa-solid fa-user"></i> Customer</label>
+          <input id="customer" name="customer" type="text" value="{{ f_customer }}" placeholder="Customer">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i> Apply</button>
+        <a href="/costs" class="btn btn-ghost"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Breakdown table ─────────────────────────────────────────────────── -->
+<div class="card">
+  <h2 class="card-title"><i class="fa-solid fa-table"></i> Per-Job Breakdown</h2>
+
+  {% if breakdown %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Job ID</th>
+          <th>Description</th>
+          <th>Rule</th>
+          <th>Customer</th>
+          <th>Date</th>
+          <th>Qty</th>
+          <th>Material</th>
+          <th>Energy</th>
+          <th>Wear</th>
+          <th>Labour</th>
+          <th>Total Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in breakdown %}
+        <tr>
+          <td><code>{{ row.id }}</code></td>
+          <td>{{ row.description or "—" }}</td>
+          <td>{{ row.rule_name or "—" }}</td>
+          <td>{{ row.customer or "<span class='badge personal'>Personal</span>" | safe }}</td>
+          <td>{{ row.print_date }}</td>
+          <td>{{ row.quantity }}</td>
+          <td>{{ row.material_cost | currency }}</td>
+          <td>{{ row.energy_cost | currency }}</td>
+          <td>{{ row.machine_wear | currency }}</td>
+          <td>{{ row.labor_cost | currency }}</td>
+          <td><strong>{{ row.total_cost | currency }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty-hint">
+    <i class="fa-solid fa-circle-info"></i>
+    No records match the current filter.
+  </p>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if has_pie %}
+(function(){
+  const d = {{ pie_data | safe }};
+  new Chart(document.getElementById("pieChart"), {
+    type: "doughnut",
+    data: {
+      labels: d.labels,
+      datasets: [{
+        data: d.values,
+        backgroundColor: ["#FF6B35","#58a6ff","#f85149","#3fb950"],
+        borderWidth: 2,
+        borderColor: "#161b22",
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: "#c9d1d9" } },
+        tooltip: { callbacks: { label: ctx => ` €${ctx.parsed.toFixed(2)}` } }
+      }
+    }
+  });
+})();
+{% endif %}
+</script>
+{% endblock %}

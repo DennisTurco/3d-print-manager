@@ -43,6 +43,25 @@ import pandas as pd
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+def get_rule_by_id(rule_id: int) -> dict | None:
+    """Return a single rule as a dict, or None if not found.
+
+    Expected keys: id, name, filament_price, spool_weight, electricity_cost,
+        printer_power, wear_cost, operator_hourly, modeling_hourly, margin
+    """
+    # TODO: SELECT * FROM rules WHERE id = %(id)s
+    return None
+
+
+def get_job_by_id(job_id: str) -> dict | None:
+    """Return a single print job as a dict, or None if not found.
+
+    Expected keys match the print_jobs table + rule_name from rules join.
+    """
+    # TODO: SELECT pj.*, r.name AS rule_name FROM print_jobs pj LEFT JOIN rules r ...
+    return None
+
+
 def get_all_rules() -> pd.DataFrame:
     """Return all pricing rules as a DataFrame.
 
