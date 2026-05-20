@@ -5,8 +5,8 @@
 
 /* ── Variables ─────────────────────────────────────────────── */
 :root {
-  --bg:        #0d1117;
-  --surface:   #161b22;
+  --bg:        #141a22;
+  --surface:   #1d232c;
   --surface2:  #21262d;
   --border:    #30363d;
   --accent:    #FF6B35;
@@ -255,8 +255,14 @@ code {
 .chart-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  padding: 1rem 2rem 0;
+  gap: 1.5rem;
+  margin: 1.5rem 2rem 0;
+  align-items: stretch;
+}
+
+.chart-row .card {
+  margin: 0;
+  height: 100%;
 }
 
 .chart-card canvas { max-height: 280px; }
